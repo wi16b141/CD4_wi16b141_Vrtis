@@ -52,7 +52,7 @@ namespace CD4_Server.DataHandling
             return temp;
         }
 
-        //liefert die alle Messages eines LogFiles
+        //liefert alle Messages eines LogFiles
         public string[] GetAllMessagesFromLogFile(string fileName)
         {
             string[] temp = File.ReadAllLines(folder + fileName);
