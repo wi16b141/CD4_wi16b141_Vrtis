@@ -72,6 +72,7 @@
     </ApplicationDefinition>
     <Compile Include="Communications\ClientHandler.cs" />
     <Compile Include="Communications\Server.cs" />
+    <Compile Include="DataHandling\DataHandler.cs" />
     <Compile Include="ViewModel\MainViewModel.cs" />
     <Compile Include="ViewModel\ViewModelLocator.cs" />
     <Page Include="MainWindow.xaml">
@@ -114,6 +115,5 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

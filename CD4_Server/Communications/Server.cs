@@ -11,14 +11,20 @@ namespace CD4_Server.Communications
 {
     class Server
     {
-        Socket serverSocket;        
-        Action<string> GuiUpdater;
+        /*
+         * Akzeptiert neue Clients (in eigenem Thread),
+         * Trennt die Verbindung zu allen Clients und stoppt gleichzeitig den Thread für neue Clients
+         * Trennt spezifische Clients
+         * Informiert alle Clients über Nachrichten von den anderen Clients (das Senden der
+         *   eigentlichen Nachricht wird in der ClientHandler Klasse definiert!)
+         */ 
 
-        //handles clients
-        List<ClientHandler> clients = new List<ClientHandler>();
-        Thread acceptingThread;
-        
+        Socket serverSocket;       
+        Action<string> GuiUpdater; //delegate, um GUI über Nachrichten von Clients zu informieren
+        List<ClientHandler> clients = new List<ClientHandler>(); //verwaltet alle ClientHandler
+        Thread acceptingThread; //eigener Thread für das Akzeptieren v. Clients
 
+        //eine Server-Instanz benötigt eine IP, einen Port und einen Delegate, um die GUI upzudaten
         public Server(string ip, int port, Action<string> guiupdater)
         {
             GuiUpdater = guiupdater;
@@ -30,38 +36,46 @@ namespace CD4_Server.Communications
         public void StartAccepting()
         {
             acceptingThread = new Thread(new ThreadStart(Accept));
-            acceptingThread.IsBackground = true;
+            acceptingThread.IsBackground = true; //wird beendet sobald Foreground-Prozess beendet wird
             acceptingThread.Start();
         }
 
         private void Accept()
         {
+            //solange der Thread nicht beendet oder abgebrochen wurde
             while (acceptingThread.IsAlive)
             {
                 try
                 {
-                    clients.Add(new ClientHandler(serverSocket.Accept(), new Action<string, Socket>(NewMessageReceived)));
+                    //neuen ClientHandler pro Client hinzufügen
+                    clients.Add(new ClientHandler(serverSocket.Accept(),
+                        new Action<string, Socket>(NewMessageReceived)));
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    //executed if serversocket.close is called
+                    //sobald serversocket.close aufgerufen wird
                 }
             }
         }
+
+        //empfängt Nachrichten von Clients und leitet dies an die eigene GUI und die Clients weiter
         private void NewMessageReceived(string message, Socket senderSocket)
         {
-            GuiUpdater(message); //informiert die GUI
+            GuiUpdater(message); //informiert die GUI, wenn ein Client eine Nachricht gesendet hat
             
-            foreach (var item in clients) //informiert alle andern Clients
+            foreach (var item in clients) //sendet die Nachricht an alle anderen Clients weiter
             {
-                if (item.ClientSocket != senderSocket)
+                if (item.Socket != senderSocket)
                 {
                     item.Send(message);
                 }
             }
         }
 
-        public void StopAccepting() //alle Client Sockets und Threads schließen
+        /* schließt den Socket des Servers, trennt alle Clients und löscht sie aus der 
+         *    Liste und schließt den Thread für d. Akzeptieren von neuen Clients
+         */
+        public void StopAccepting() 
         {
             serverSocket.Close(); //schließt den Socket für den Server
             acceptingThread.Abort(); //beendet den Thread, der neue Clients akzeptiert
@@ -73,17 +87,26 @@ namespace CD4_Server.Communications
             clients.Clear(); //Liste leeren
         }
 
+        //einen spezifischen Client schließen und aus der Liste löschen
         public void DisconnectSpecificClient(string name)
         {
-            foreach (var item in clients) 
+            try 
             {
-                if (item.Name.Equals(name))
+                foreach (var item in clients)
                 {
-                    item.Close();
-                    clients.Remove(item);
-                    //break;
+                    if (item.Name.Equals(name)) 
+                    {
+                        item.Close();//trennt spezifischen Client
+                        clients.Remove(item); //und entfernt ihn aus der Clients Liste
+                        //break;
+                    }
                 }
             }
+            catch (Exception)
+            {
+                //throw new Exception("No clients left");
+            }
+            
         }
     }
 }

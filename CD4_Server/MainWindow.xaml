@@ -46,7 +46,7 @@
                     <ListBox Grid.Row="1" Grid.Column="1" Margin="10" ItemsSource="{Binding Messages}" />
 
                     <Button Grid.Row="2" Margin="10" Content="Drop" HorizontalAlignment="Right" Width="60" Height="20" Command="{Binding BtnDropClicked}" />
-                    <Button Grid.Row="2" Grid.Column="1" Margin="10" Content="Save to Log" HorizontalAlignment="Right" Width="80" Height="20" />
+                    <Button Grid.Row="2" Grid.Column="1" Margin="10" Content="Save to Log" HorizontalAlignment="Right" Width="80" Height="20" Command="{Binding BtnSaveLogFileClicked}" />
                 </Grid>
             </TabItem>
 
@@ -66,12 +66,12 @@
                     <Label Content="Log files:" Margin="10" />
                     <Label Grid.Column="1" Content="Log Messages:" Margin="10" />
 
-                    <ListBox Grid.Row="1" Margin="10" />
-                    <ListBox Grid.Row="1" Grid.Column="1" Grid.RowSpan="2" Margin="10" />
+                    <ListBox Grid.Row="1" Margin="10" ItemsSource="{Binding LogFiles}" SelectedItem="{Binding SelectedLogFile}" />
+                    <ListBox Grid.Row="1" Grid.Column="1" Grid.RowSpan="2" Margin="10" ItemsSource="{Binding LogFileMessages}" />
 
                     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Margin="5,10" Content="Show" HorizontalAlignment="Right" Width="60" Height="20" />
-                        <Button Margin="10" Content="Drop" HorizontalAlignment="Right" Width="60" Height="20" />
+                        <Button Margin="5,10" Content="Show" HorizontalAlignment="Right" Width="60" Height="20" Command="{Binding BtnShowLogFileClicked}" />
+                        <Button Margin="10" Content="Drop" HorizontalAlignment="Right" Width="60" Height="20" Command="{Binding BtnDropLogFileClicked}" />
                     </StackPanel>
                 </Grid>
             </TabItem>

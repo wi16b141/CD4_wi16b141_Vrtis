@@ -14,42 +14,53 @@ namespace CD4_Clien.ViewModel
         private const string ip = "127.0.0.1";
         private const int port = 8010;
 
+        #region properties for GUI
         public string ChatName { get; set; }
         public string Message { get; set; }
         public ObservableCollection<string> Messages { get; set; }
         public RelayCommand BtnConnectClicked { get; set; }
         public RelayCommand BtnSendClicked { get; set; }
+        #endregion
 
         public MainViewModel()
         {
             Messages = new ObservableCollection<string>();
-            BtnConnectClicked = new RelayCommand(BtnConnect, ()=> { return (!isConnected && ChatName != null); });
-            BtnSendClicked = new RelayCommand(BtnSend, () => { return (isConnected && Message != null); });
+
+            //Verbindung mit dem Server initialisieren
+            BtnConnectClicked = new RelayCommand(
+                () =>
+                {
+                    isConnected = true; //(Connect Button greift auf diese Variable)
+                    client = new Clients(ip, port, new Action<string>(NewMessageReceived),ClientDissconnected);
+                },
+                ()=> { return (!isConnected && ChatName != null); });
+
+            //Nachrichten an den Server und die eigene GUI schicken
+            BtnSendClicked = new RelayCommand(
+                () =>
+                {
+                    client.Send(ChatName + ": " + Message);
+                    Messages.Add("YOU: " + Message); //Anzeige in der eigenen GUI
+                },
+                () => { return (isConnected && Message != null); });
         }
 
-        private void BtnSend()
-        {
-            client.Send(ChatName + ": " + Message);
-            Messages.Add("YOU: " + Message); //Anzeige in der eigenen GUI
-        }
-
-        private void BtnConnect()
-        {
-            isConnected = true;
-            client = new Clients(ip, port, new Action<string>(NewMessageReceived), ClientDissconnected);
-        }
-
-        private void ClientDissconnected()
+        //ändert die Variable isConnected, worauf Connect-Button greift, auf false ab
+        private void ClientDissconnected() 
         {
             isConnected = false;
-            CommandManager.InvalidateRequerySuggested();
+
+            //den CommandManager zwingen, alle Konditionen auf Änderungen zu überprüfen
+            CommandManager.InvalidateRequerySuggested(); 
         }
 
         private void NewMessageReceived(string message)
         {
+            //um Nachrichten aus anderen Threads in die GUI zu schreiben
             App.Current.Dispatcher.Invoke(() =>
             {
-                Messages.Add(message); //fügt fremde Nachricht in die OC Messages hinzu
+                //fügt fremde Nachricht in die Observ.Coll. Messages hinzu
+                Messages.Add(message); 
             });
         }
     }

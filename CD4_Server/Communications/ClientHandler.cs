@@ -10,52 +10,72 @@ namespace CD4_Server.Communications
 {
     class ClientHandler
     {
+        /*
+         * Empfängt Nachrichten (in einem eigenen Thread)
+         * Beendet Clientverbindungen und verwirft obigen Thread dabei
+         * Sendet Nachrichten an Clients (vom Server selbst bzw. über den Server von anderen Clients)         * 
+         */
+
         private Action<string, Socket> action; //um GUI über Nachrichten (string) + den Sender der Nachricht (Socket) zu informieren
-        private byte[] buffer = new byte[500];
-        private Thread clientReceiveThread;
+        private byte[] buffer = new byte[500]; //Byte-Puffer, um Byte-Nachrichten zu empfangen
+        private Thread clientReceiveThread; //eigener Thread für den Empfang v. Nachrichten
         const string endMessage = "@quit"; //Befehl, um Chat zu beenden
 
         public string Name { get; private set; } //Name des Clients/Chatteilnehmers
-        public Socket ClientSocket { get; private set; }
+        public Socket Socket { get; private set; }
 
+        /* Eine neue ClientHanlder-Instanz benötigt einen Socket, und einen Delegate, um den
+        *    Server sowohl über Nachrichten als auch über dessen Empfänger zu informieren
+        */
         public ClientHandler(Socket socket, Action<string, Socket> action)
         {
-            ClientSocket = socket;
-            this.action = action;
-
-            //eigener Thread für Receiving
+            this.Socket = socket;
+            this.action = action;      
+            
+            //Thread für den Empfang von Nachrichten initiieren und starten
             clientReceiveThread = new Thread(Receive);
             clientReceiveThread.Start();
         }
 
-        public void Receive() //empfängt Nachrichten
+        //empfängt Nachrichten
+        public void Receive() 
         {
             string message = "";
-            while (!message.Equals(endMessage)) //solange nicht beendet wird
+
+            //solange vom Server ausgehend nicht beendet wird
+            while (!message.Equals(endMessage)) 
             {
-                int length = ClientSocket.Receive(buffer);
+                //empfangene Nachricht von Byte in String konventieren
+                int length = Socket.Receive(buffer);
                 message = Encoding.UTF8.GetString(buffer, 0, length);
 
-                if(Name == null && message.Contains(":"))
+                //bei der ersten Nachrichtenübermittlung wird der Name vergeben,
+                if (Name == null && message.Contains(":"))
                 {
-                    Name = message.Split(':')[0]; //falls der Name in der message enthalten ist (zB "Kati: Hallo")
+                    Name = message.Split(':')[0]; //message = "Kati: Hallo";
                 }
 
-                action(message, ClientSocket); //informiert die GUI über die Nachricht und den Sender der Nachricht
+                //informiert die GUI über die Nachricht und Sender
+                action(message, Socket); 
             }
-            Close(); //Trennt den Client, falls endMessage @quit eingegeben wurde
+
+            //Trennt den Client, falls der Server die endMessage @quit schickt
+            Close(); 
         }
 
-        public void Close() //beendet Clients und deren Threads
+        //beendet Client und dessen Receive-Thread
+        public void Close() 
         {
             Send(endMessage);
-            ClientSocket.Close(1); //1 = timeout
+            Socket.Close(1); //1 = timeout
             clientReceiveThread.Abort(); //beendet Thread
         }
 
-        public void Send(string message) //sendet Nachrichten an Clients
+        //sendet Nachrichten an Clients
+        public void Send(string message) 
         {
-            ClientSocket.Send(Encoding.UTF8.GetBytes(message));
+            //Nachricht von String in Byte konvertieren
+            Socket.Send(Encoding.UTF8.GetBytes(message));
         }
 
     }
